@@ -2846,6 +2846,7 @@ namespace ICSharpCode.NRefactory.CSharp.Completion
 				ctx.CurrentTypeDefinition,
 				Compilation.MainAssembly
 			);
+			var inObjectCreate = resolvedNode.Ancestors.TakeWhile(i => i is MemberType || i is ObjectCreateExpression).Any(i => i is ObjectCreateExpression);
 			if (resolveResult is NamespaceResolveResult) {
 				var nr = (NamespaceResolveResult)resolveResult;
 				if (!(resolvedNode.Parent is UsingDeclaration || resolvedNode.Parent != null && resolvedNode.Parent.Parent is UsingDeclaration)) {
@@ -2855,7 +2856,10 @@ namespace ICSharpCode.NRefactory.CSharp.Completion
 						}
 						if (!lookup.IsAccessible(cl, false))
 							continue;
-						result.AddType(cl, false, IsAttributeContext(resolvedNode));
+						if (inObjectCreate)
+							result.AddConstructors(cl, false, IsAttributeContext(resolvedNode));
+						else
+							result.AddType(cl, false, IsAttributeContext(resolvedNode));
 					}
 				}
 				foreach (var ns in nr.Namespace.ChildNamespaces) {
@@ -2870,7 +2874,10 @@ namespace ICSharpCode.NRefactory.CSharp.Completion
 					var def = nested.GetDefinition();
 					if (def != null && !lookup.IsAccessible(def, false))
 						continue;
-					result.AddType(nested, false);
+					if (inObjectCreate)
+						result.AddConstructors(nested, false);
+					else
+						result.AddType(nested, false);
 				}
 			}
 			return result.Result;
